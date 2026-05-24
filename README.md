@@ -1,69 +1,84 @@
 # claude-hop
 
-Fuzzy picker for jumping between parallel Claude Code instances.
+Fuzzy picker for jumping between parallel Claude Code instances in tmux.
 
-Run multiple Claude Code sessions in tmux/zellij panes and instantly see which ones need attention. One keystroke to jump to an idle instance.
-
-## Features
-
-- **Picker** — fuzzy search across all running Claude instances, Enter to jump to that pane
-- **Jump** — instantly switch to the most recently idle instance (no UI)
-- **Alerts** — desktop notification when a non-focused instance goes idle (via Claude hooks)
-
-## Install
-
-```sh
-cargo install claude-hop
-```
+See which instances need attention, jump to them with one keystroke.
 
 ## Usage
 
-### Picker
+### Picker (`prefix + F`)
 
-```sh
-claude-hop pick
-```
+Opens a popup with all running Claude instances and their status.
 
-Opens an interactive fuzzy picker showing all Claude instances with status indicators:
+- Up/Down to navigate
+- Type to fuzzy filter
+- Enter to jump to selected instance
+- Esc to close
 
-- `●` idle (waiting for input)
-- `⚡` busy (working)
-- `⏸` permission (waiting for approval)
+Status indicators:
 
-Type to fuzzy filter. Enter to jump. Esc to close.
+- `[idle]` waiting for input
+- `[busy]` working
+- `[ask]` waiting for user response (questionnaire)
+- `[wait]` waiting
 
-### Jump to latest idle
-
-```sh
-claude-hop jump
-```
+### Jump (`prefix + J`)
 
 No UI — immediately switches to the most recently idle instance that isn't in your current pane.
 
-### Recommended keybindings
+### Status bar
 
-**tmux** (add to `~/.tmux.conf`):
+Shows when an instance is ready for attention:
+
+```
+⏎ my-project          (one instance ready)
+⏎ 3 ready             (multiple instances ready)
+                       (nothing to do — hidden)
+```
+
+## Installation
+
+```bash
+cargo install claude-hop
+```
+
+Or build from source:
+
+```bash
+git clone https://github.com/laperlej/claude-hop.git
+cd claude-hop
+cargo build --release
+```
+
+## Configuration
+
+### tmux keybindings
+
+Add to `~/.tmux.conf`:
 
 ```tmux
-bind-key F display-popup -E "claude-hop pick"
-bind-key J run-shell "claude-hop jump"
+# picker popup
+bind F display-popup -E "claude-hop pick"
+
+# jump to latest idle instance
+bind J run-shell "claude-hop jump"
 ```
 
-**zellij** (add to `config.kdl`):
+### tmux status bar
 
-```kdl
-bind "Alt f" {
-    Run "claude-hop" "pick" {
-        in_place true
-    }
-}
+Add to `~/.tmux.conf`:
+
+```tmux
+set -g status-left '#(claude-hop status)'
+set -g status-left-length 40
+set -g status-interval 2
 ```
 
-## Alerts (optional)
+### Claude Code hooks (optional)
 
-Configure Claude Code hooks for instant notifications when an instance goes idle.
+For desktop notifications when a non-focused instance goes idle:
 
-```sh
+```bash
 claude-hop setup
 ```
 
@@ -72,12 +87,14 @@ This prints the hook configuration to add to `~/.claude/settings.json`.
 ## How it works
 
 1. Reads Claude session files from `~/.claude/sessions/*.json`
-2. Correlates Claude PIDs to multiplexer panes via process tree walking
-3. Renders a ratatui fuzzy picker (or jumps directly with `jump`)
-4. Switches your multiplexer to the selected pane
+2. Correlates Claude PIDs to tmux panes via process tree walking
+3. Renders a [ratatui](https://github.com/ratatui/ratatui) fuzzy picker with [nucleo](https://github.com/helix-editor/nucleo) matching
+4. Switches your tmux client to the selected pane
 
-Works with tmux and zellij. Falls back to displaying PID + working directory if no multiplexer is detected.
+## Contributing
+
+Contributions are welcome. Please open an issue or a pull request.
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
